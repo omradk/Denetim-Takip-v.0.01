@@ -1,5 +1,6 @@
 import { initializeApp } from "firebase/app";
 import { getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot, query, orderBy } from "firebase/firestore";
+import { getAnalytics } from "firebase/analytics";
 import { Company } from "../types";
 
 // ------------------------------------------------------------------
@@ -11,7 +12,8 @@ const firebaseConfig = {
   projectId: "audittrack-d0095",
   storageBucket: "audittrack-d0095.firebasestorage.app",
   messagingSenderId: "598389355055",
-  appId: "1:598389355055:web:c1c499633d9afa41358cda"
+  appId: "1:598389355055:web:c1c499633d9afa41358cda",
+  measurementId: "G-YJV9YK317Y"
 };
 
 // Uygulama başlatma
