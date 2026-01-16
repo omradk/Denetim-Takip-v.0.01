@@ -12,7 +12,6 @@ const firebaseConfig = {
   storageBucket: "audittrack-d0095.firebasestorage.app",
   messagingSenderId: "598389355055",
   appId: "1:598389355055:web:c1c499633d9afa41358cda"
-  measurementId: "G-YJV9YK317Y"
 };
 
 // Uygulama başlatma
