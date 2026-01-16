@@ -3,8 +3,11 @@ import { Company, DocStatus, DischargeType, getRequiredDocuments, CompanyStatus 
 import { Dashboard } from './components/Dashboard';
 import { CompanyDetail } from './components/CompanyDetail';
 import { Analytics } from './components/Analytics';
-import { LayoutGrid, BarChart3, LayoutDashboard, Database } from 'lucide-react';
+import { LayoutGrid, BarChart3, LayoutDashboard } from 'lucide-react';
 import { subscribeToCompanies, saveCompanyToFirebase, deleteCompanyFromFirebase } from './services/firebase';
+
+
+const STORAGE_KEY = 'audit_track_data';
 
 type ViewState = 'dashboard' | 'analytics';
 
@@ -12,20 +15,55 @@ const App: React.FC = () => {
   const [companies, setCompanies] = useState<Company[]>([]);
   const [selectedCompanyId, setSelectedCompanyId] = useState<string | null>(null);
   const [currentView, setCurrentView] = useState<ViewState>('dashboard');
-  const [isLoading, setIsLoading] = useState(true);
 
-  // Firebase'den verileri dinle
+  // Load from local storage on mount
   useEffect(() => {
-    const unsubscribe = subscribeToCompanies((updatedCompanies) => {
-      setCompanies(updatedCompanies);
-      setIsLoading(false);
-    });
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        
+        // Helper to safely parse dates
+        const safeDate = (d: any): Date | undefined => {
+            if (!d) return undefined;
+            const date = new Date(d);
+            return isNaN(date.getTime()) ? undefined : date;
+        };
 
-    // Cleanup function
-    return () => unsubscribe();
+        // Restore Date objects
+        const hydrated = parsed.map((c: any) => ({
+            ...c,
+            lastUpdated: safeDate(c.lastUpdated) || new Date(),
+            // Default to NO_DOCS if not present
+            status: c.status || CompanyStatus.NO_DOCS,
+            // Default to lastUpdated or now if opening date not present (migration)
+            auditOpeningDate: safeDate(c.auditOpeningDate) || safeDate(c.lastUpdated) || new Date(),
+            deadlineDate: safeDate(c.deadlineDate),
+            auditClosingDate: safeDate(c.auditClosingDate),
+            // Ensure dischargeType exists for old data
+            dischargeType: c.dischargeType || DischargeType.INDIRECT_PRE,
+            isLowVolume: c.isLowVolume || false,
+            // Ensure docs have new fields if missing
+            documents: c.documents.map((d: any) => ({
+                ...d,
+                finding: d.finding || '',
+                correctiveAction: d.correctiveAction || ''
+            }))
+        }));
+        setCompanies(hydrated);
+      } catch (e) {
+        console.error("Failed to parse saved data", e);
+      }
+    }
   }, []);
 
+  // Save to local storage on change
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(companies));
+  }, [companies]);
+
   const handleAddCompany = (name: string, email: string, auditId: string, openingDate: Date, deadlineDate: Date) => {
+    // Default to Indirect with Pre-treatment as it's a common type
     const defaultType = DischargeType.INDIRECT_PRE;
     const defaultLowVolume = false;
 
@@ -42,39 +80,25 @@ const App: React.FC = () => {
       deadlineDate: deadlineDate,
       documents: getRequiredDocuments(defaultType, defaultLowVolume)
     };
-    
-    // Firebase'e kaydet (UI, listener sayesinde otomatik güncellenecek)
-    saveCompanyToFirebase(newCompany);
+    setCompanies([newCompany, ...companies]);
   };
 
   const handleUpdateCompany = (updatedCompany: Company) => {
-    // Firebase'e güncelle
-    saveCompanyToFirebase(updatedCompany);
+    setCompanies(companies.map(c => c.id === updatedCompany.id ? updatedCompany : c));
   };
 
   const handleDeleteCompany = (id: string) => {
     if (confirm('Bu firmayı silmek istediğinize emin misiniz?')) {
-        deleteCompanyFromFirebase(id);
+        setCompanies(companies.filter(c => c.id !== id));
         if (selectedCompanyId === id) setSelectedCompanyId(null);
     }
   };
 
-  // Seçili firmayı companies listesinden canlı olarak bul (güncellemeleri görmek için)
   const selectedCompany = companies.find(c => c.id === selectedCompanyId);
 
   // Render logic based on state
   const renderContent = () => {
-    if (isLoading) {
-        return (
-            <div className="flex flex-col items-center justify-center min-h-[50vh]">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-slate-900"></div>
-                <p className="mt-4 text-slate-600 font-medium">Veriler yükleniyor...</p>
-                <p className="text-xs text-slate-400 mt-2">Firebase bağlantısı bekleniyor</p>
-            </div>
-        );
-    }
-
-    if (selectedCompanyId && selectedCompany) {
+    if (selectedCompany) {
       return (
         <CompanyDetail 
           company={selectedCompany} 
@@ -82,9 +106,6 @@ const App: React.FC = () => {
           onBack={() => setSelectedCompanyId(null)}
         />
       );
-    } else if (selectedCompanyId && !selectedCompany) {
-        // Silinmişse veya bulunamazsa
-        setSelectedCompanyId(null);
     }
     
     if (currentView === 'analytics') {
@@ -114,16 +135,13 @@ const App: React.FC = () => {
                             </div>
                             <div>
                               <span className="font-bold text-xl tracking-tight text-slate-900">AuditTrack</span>
-                              <span className="text-xs flex items-center text-slate-600 font-medium">
-                                <Database className="w-3 h-3 mr-1 text-emerald-600" />
-                                Canlı Veri Sistemi
-                              </span>
+                              <span className="text-xs block text-slate-600 font-medium">Atıksu Denetim Sistemi</span>
                             </div>
                         </div>
                     </div>
 
                     {/* View Switcher */}
-                    {!selectedCompanyId && (
+                    {!selectedCompany && (
                         <div className="flex items-center space-x-1">
                             <button
                                 onClick={() => setCurrentView('dashboard')}
