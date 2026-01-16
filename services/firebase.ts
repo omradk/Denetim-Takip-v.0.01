@@ -6,12 +6,12 @@ import { Company } from "../types";
 // LÜTFEN AŞAĞIDAKİ BİLGİLERİ FIREBASE KONSOLUNDAN ALIP DOLDURUNUZ
 // ------------------------------------------------------------------
 const firebaseConfig = {
-  apiKey: "BURAYA_FIREBASE_API_KEY_GELECEK",
-  authDomain: "BURAYA_PROJECT_ID.firebaseapp.com",
-  projectId: "BURAYA_PROJECT_ID",
-  storageBucket: "BURAYA_PROJECT_ID.appspot.com",
-  messagingSenderId: "BURAYA_SENDER_ID",
-  appId: "BURAYA_APP_ID"
+  apiKey: "AIzaSyB_q3DkIfS4A_kzNDkclNvR-NpGqtFtR7I",
+  authDomain: "audittrack-d0095.firebaseapp.com",
+  projectId: "audittrack-d0095",
+  storageBucket: "audittrack-d0095.firebasestorage.app",
+  messagingSenderId: "598389355055",
+  appId: "1:598389355055:web:c1c499633d9afa41358cda"
 };
 
 // Uygulama başlatma
