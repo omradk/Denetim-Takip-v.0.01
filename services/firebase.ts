@@ -21,6 +21,7 @@ const firebaseConfig = {
 let db;
 try {
     const app = initializeApp(firebaseConfig);
+    const analytics = getAnalytics(app);
     db = getFirestore(app);
 } catch (e) {
     console.error("Firebase başlatılamadı. Config ayarlarını services/firebase.ts dosyasında yaptığınızdan emin olun.", e);
